@@ -1,11 +1,14 @@
-from bs4 import BeautifulSoup
-from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
 from datetime import datetime, timedelta
+from selenium import webdriver
+from bs4 import BeautifulSoup
+from paramiko import *
 import pandas as pd
 import time
+
+import myconstants
 
 if datetime.now().strftime("%A") == "Monday":
     DATE = (datetime.now() - timedelta(3)).strftime("%A, %B %d, %Y")
@@ -13,6 +16,7 @@ else:
     DATE = (datetime.now() - timedelta(1)).strftime("%A, %B %d, %Y")
 
 URL = "https://nzfma.org/data/search.aspx"
+host = 'nfs.interest.co.nz'
 
 
 def launch_website():
@@ -36,7 +40,7 @@ def click_search_button(driver):
 def get_data_array(driver):
     print("Scraping has successfully begun: ")
     soup = BeautifulSoup(driver.page_source, 'html.parser')
-    print("\n")
+    print("")
 
     table = soup.find('table', border="1")
     array = []
@@ -54,12 +58,13 @@ def get_data_array(driver):
 
     # data points required
     fra_data = [array[9], array[14], array[19], array[24], array[29], array[34]]
+    print("Data successfully gathered: ")
     print(fra_data)
 
     # create dictionary
     dataframe_collection = {}
 
-    # create dataframe for each of the 6 data points
+    # create dataframe for each of the 6 data points and add to dictionary
     for i in range(0, 6):
         df_data = [fra_data[i]]
         data_frame = pd.DataFrame(df_data, columns=['Date', 'rate'])
@@ -77,20 +82,33 @@ def write_to_csv(dataframe_collection):
         print(key)
         print("-" * 20)
         print(dataframe_collection[key])
-
     print("")
+
     # append each of the 6 dataframes to each of the csv files
     for i in range(0, 6):
         # path = f'\\\\SERVER\\jdjl\\interest-nz\\interest.co.nz\\chart_data\\interestrates\\bkbm-{i + 1}mth.csv'
-        path = f"C:\\Users\\ken\\Desktop\\Book{i + 1}.csv"
+        path = f"C:\\Users\\User\\Desktop\\Book{i + 1}.csv"
         dataframe_collection[f'df{i + 1}'].to_csv(path, mode='a', index=False, header=False)
-        print(f"Successfully added to: bkbm-{i + 1}")
+
+    print("All files successfully updated")
 
 
 def ftp_files():
-    # transfer updated csv files to website server
-    # figure out how to do this
-    return
+    # connect to the SFTP host server
+    print(f"Connecting to {host}...")
+    transport = Transport(host)
+    transport.connect(None, myconstants.USERNAME, myconstants.PASSWORD)
+    sftp = SFTPClient.from_transport(transport)
+    print(f"Connection to {host} server successful")
+
+    # upload the local file to replace/update the remote file
+    for i in range(0, 6):
+        localfile = f"K:\\interest-nz\\interest.co.nz\\chart_data\\interestrates\\bkbm-{i + 1}mth.csv"
+        remotefile = f"/var/www/drupal8.interest.co.nz/web/sites/default/files/charts-csv/chart_data/interestrates/bkbm-{i + 1}mth.csv"
+        sftp.put(localfile, remotefile)
+        print(f"Successfully uploaded: bkbm-{i + 1}mth to host server")
+    print("")
+    print("All files uploaded")
 
 
 if __name__ == '__main__':
@@ -103,4 +121,4 @@ if __name__ == '__main__':
     time.sleep(1)
     write_to_csv(dataframe_collection)  # update csv files
     driver.quit()
-
+    ftp_files()
