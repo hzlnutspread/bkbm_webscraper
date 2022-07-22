@@ -10,3 +10,9 @@ and update the existing csv files on the company server. It will then FTP the fi
 it can be viewed on the website.
 
 Another step towards automating my job.
+
+22/july/2022 update:
+I have now fully automated this task and created a windows batch file to run this daily. I now no longer need to think
+about this task except for checking that it has run correctly every so often.
+
+Great success!

@@ -10,13 +10,8 @@ import time
 
 import myconstants
 
-if datetime.now().strftime("%A") == "Monday":
-    DATE = (datetime.now() - timedelta(3)).strftime("%A, %B %d, %Y")
-else:
-    DATE = (datetime.now() - timedelta(1)).strftime("%A, %B %d, %Y")
-
 URL = "https://nzfma.org/data/search.aspx"
-host = 'nfs.interest.co.nz'
+host = myconstants.REMOTESERVER
 
 
 def launch_website():
@@ -46,11 +41,7 @@ def get_data_array(driver):
     array = []
     values = table.find_all('td')
     for value in values:
-        if datetime.now().strftime("%A") == "Monday":
-            # format date for csv export
-            date_val = (datetime.now() - timedelta(3)).strftime("%d-%b-%y")
-        else:
-            date_val = (datetime.now() - timedelta(1)).strftime("%d-%b-%y")
+        date_val = (datetime.now() - timedelta(1)).strftime("%d-%b-%y")
 
         # create subarrays to append to array
         subarray = [date_val, value.text]
@@ -72,22 +63,22 @@ def get_data_array(driver):
         data_frame['rate'] = data_frame['rate'].round(decimals=2)
         dataframe_collection[f'df{i + 1}'] = data_frame
 
-    return dataframe_collection
-
-
-def write_to_csv(dataframe_collection):
     # print key and value to make sure the data is correct
+    print("\nGenerating DataFrames")
     for key in dataframe_collection.keys():
-        print("\n" + "=" * 20)
+        print("=" * 20)
         print(key)
         print("-" * 20)
         print(dataframe_collection[key])
     print("")
 
+    return dataframe_collection
+
+
+def write_to_csv(dataframe_collection):
     # append each of the 6 dataframes to each of the csv files
     for i in range(0, 6):
-        # path = f'\\\\SERVER\\jdjl\\interest-nz\\interest.co.nz\\chart_data\\interestrates\\bkbm-{i + 1}mth.csv'
-        path = f"C:\\Users\\User\\Desktop\\Book{i + 1}.csv"
+        path = f'\\\\SERVER\\jdjl\\interest-nz\\interest.co.nz\\chart_data\\interestrates\\bkbm-{i + 1}mth.csv'
         dataframe_collection[f'df{i + 1}'].to_csv(path, mode='a', index=False, header=False)
 
     print("All files successfully updated")
@@ -112,13 +103,17 @@ def ftp_files():
 
 
 if __name__ == '__main__':
-    driver = launch_website()  # launch bkbm website
-    click_calendar_button(driver)  # select calendar
-    select_date(driver)  # choose date
-    click_search_button(driver)  # click search button
-    time.sleep(1)
-    dataframe_collection = get_data_array(driver)  # create the array of data
-    time.sleep(1)
-    write_to_csv(dataframe_collection)  # update csv files
-    driver.quit()
-    ftp_files()
+    if datetime.now().strftime("%A") == "Monday" or datetime.now().strftime("%A") == "Sunday":
+        exit()
+    else:
+        DATE = (datetime.now() - timedelta(1)).strftime("%A, %B %d, %Y")
+        driver = launch_website()  # launch bkbm website
+        click_calendar_button(driver)  # select calendar
+        select_date(driver)  # choose date
+        click_search_button(driver)  # click search button
+        time.sleep(1)
+        dataframe_collection = get_data_array(driver)  # create the array of data
+        time.sleep(1)
+        write_to_csv(dataframe_collection)  # update csv files
+        driver.quit()
+        ftp_files()
