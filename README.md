@@ -11,8 +11,11 @@ it can be viewed on the website.
 
 Another step towards automating my job.
 
-22/july/2022 update:
+<h1>23/july/2022 update:</h1>
+
 I have now fully automated this task and created a windows batch file to run this daily. I now no longer need to think
 about this task except for checking that it has run correctly every so often.
+
+I will now try and do this for as many tasks as possible.
 
 Great success!
